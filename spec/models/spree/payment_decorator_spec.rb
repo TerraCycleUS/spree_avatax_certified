@@ -16,12 +16,13 @@ describe Spree::Payment, :vcr do
 
   let(:card) { create :credit_card }
 
+  let(:amount) { 5 }
   let(:payment) do
     payment = Spree::Payment.new
     payment.source = card
     payment.order = order
     payment.payment_method = gateway
-    payment.amount = 5
+    payment.amount = amount
     payment
   end
 
@@ -41,56 +42,47 @@ describe Spree::Payment, :vcr do
     allow(payment.log_entries).to receive(:create!)
   end
 
-
   describe "#purchase!" do
     subject do
       VCR.use_cassette('order_capture_finalize', allow_playback_repeats: true) do
-        order.avalara_capture_finalize
         payment.purchase!
       end
     end
 
-    it "receive avalara_finalize" do
-      expect(payment).to receive(:avalara_finalize)
-      subject
-    end
-  end
+    context 'payment covers the total' do
+      let(:amount) { order.total }
 
-  describe "#void_transaction!" do
-    it "receive cancel_avalara" do
-      expect(payment).to receive(:cancel_avalara)
-      payment.void_transaction!
-    end
-  end
-
-  describe '#cancel_avalara' do
-    it 'should receive cancel order on avalara transaction' do
-      expect(payment.order.avalara_transaction).to receive(:cancel_order)
-      payment.cancel_avalara
-    end
-
-    context 'uncommitted order' do
-      subject do
-        VCR.use_cassette('order_cancel_error', allow_playback_repeats: true) do
-          payment.cancel_avalara
-        end
-      end
-
-      it 'should recieve error message' do
-        expect(subject['ResultCode']).to eq('Error')
+      it 'receive avalara_finalize' do
+        expect(order).to receive(:avalara_capture_finalize).once
+        subject
       end
     end
 
-    context 'committed order' do
-      subject do
-        VCR.use_cassette('order_cancel', allow_playback_repeats: true) do
-          order.avalara_capture_finalize
-          payment.cancel_avalara
-        end
+    context 'partial payment' do
+      let(:amount) { 1 }
+
+      it 'do not receive avalara_finalize' do
+        expect(order).to_not receive(:avalara_capture_finalize)
+        subject
+      end
+    end
+
+    context 'multiple payment' do
+      let(:amount) { order.total - 1 }
+      let(:payment2) do
+        payment = Spree::Payment.new
+        payment.source = card
+        payment.order = order
+        payment.payment_method = gateway
+        payment.amount = 1
+        payment
       end
 
-      it 'should receive result of success' do
-        expect(subject['ResultCode']).to eq('Success')
+      before { payment2.purchase! }
+
+      it 'receive avalara_finalize once' do
+        expect(order).to receive(:avalara_capture_finalize).once
+        subject
       end
     end
   end
