@@ -36,7 +36,9 @@ module SpreeAvataxCertified
 
     def self.activate
       Dir.glob(File.join(File.dirname(__FILE__), '../../app/models/**/*.rb')) do |c|
-        Rails.configuration.cache_classes ? require(c) : load(c)
+        # Some models raise "superclass mismatch" during "load(c)". Always use "require(c)".
+        # Rails.configuration.cache_classes ? require(c) : load(c)
+        require(c)
       end
     end
 
