@@ -1,7 +1,7 @@
-require_dependency 'spree/order'
+require_dependency 'spree/order' unless Rails.env.development?
 
 module Spree
-  class AvalaraTransaction < Spree::Base
+  class AvalaraTransaction < ActiveRecord::Base
 
     belongs_to :order
     belongs_to :reimbursement
