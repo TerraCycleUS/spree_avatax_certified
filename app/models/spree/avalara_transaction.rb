@@ -1,4 +1,7 @@
-require_dependency 'spree/order' unless Rails.env.development?
+# frozen_string_literal: true
+
+# The engin is already require spree/core useless to require spree/order again
+# require_dependency 'spree/order'
 
 module Spree
   class AvalaraTransaction < ActiveRecord::Base
