@@ -1,7 +1,10 @@
-require_dependency 'spree/order'
+# frozen_string_literal: true
+
+# The engin is already require spree/core useless to require spree/order again
+# require_dependency 'spree/order'
 
 module Spree
-  class AvalaraTransaction < Spree::Base
+  class AvalaraTransaction < ActiveRecord::Base
 
     belongs_to :order
     belongs_to :reimbursement
