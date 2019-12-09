@@ -1,14 +1,22 @@
-Spree::Payment.class_eval do
-  state_machine.after_transition to: :completed, do: :avalara_finalize
+# frozen_string_literal: true
 
-  def avalara_tax_enabled?
-    Spree::Config.avatax_tax_calculation
-  end
+module Spree
+  module PaymentDecorator
+    def self.prepended(base)
+      base.state_machine.after_transition to: :completed, do: :avalara_finalize
+    end
 
-  def avalara_finalize
-    return unless avalara_tax_enabled?
-    return if order.outstanding_balance?
+    def avalara_tax_enabled?
+      Spree::Config.avatax_tax_calculation
+    end
 
-    order.avalara_capture_finalize
+    def avalara_finalize
+      return unless avalara_tax_enabled?
+      return if order.outstanding_balance?
+
+      order.avalara_capture_finalize
+    end
   end
 end
+
+Spree::Payment.prepend Spree::PaymentDecorator
